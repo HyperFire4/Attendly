@@ -49,7 +49,7 @@
         </button>
     </header>
 
-    <!-- Sidebar Navigation (Desktop & Mobile Overlay) -->
+    <!-- Sidebar Navigation -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0">
         <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
             <div class="flex items-center gap-3">
@@ -70,6 +70,9 @@
             </button>
             <button onclick="switchTab('attendance')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="attendance">
                 <i data-lucide="check-square" class="w-4 h-4"></i> Daily Attendance
+            </button>
+            <button onclick="switchTab('assignments')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="assignments">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i> Assignments
             </button>
             <button onclick="switchTab('subjects')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="subjects">
                 <i data-lucide="book-open" class="w-4 h-4"></i> Subjects
@@ -184,6 +187,30 @@
             </div>
 
             <div id="attendance-classes-container" class="space-y-3">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- ASSIGNMENTS TAB -->
+        <section id="tab-assignments" class="space-y-6 tab-content hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Assignments & Homework</h2>
+                    <p class="text-sm text-slate-400 mt-1">Keep track of upcoming deadlines, project tasks, and submissions.</p>
+                </div>
+                <button onclick="openAssignmentModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Assignment
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex gap-2 border-b border-slate-800 pb-3">
+                <button onclick="filterAssignments('all')" id="filter-btn-all" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition-all">All Tasks</button>
+                <button onclick="filterAssignments('pending')" id="filter-btn-pending" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 text-slate-400 rounded-lg hover:text-white transition-all">Pending</button>
+                <button onclick="filterAssignments('completed')" id="filter-btn-completed" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 text-slate-400 rounded-lg hover:text-white transition-all">Completed</button>
+            </div>
+
+            <div id="assignments-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- Populated via JS -->
             </div>
         </section>
@@ -372,10 +399,44 @@
         </div>
     </div>
 
+    <!-- ASSIGNMENT MODAL -->
+    <div id="assignment-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Add Assignment</h3>
+                <button onclick="closeAssignmentModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="assignment-form" onsubmit="handleAssignmentSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Select Subject</label>
+                    <select id="asg-subject-id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Assignment / Task Title</label>
+                    <input type="text" id="asg-title" required placeholder="e.g. Lab Experiment 3 Report" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Due Date</label>
+                    <input type="date" id="asg-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Description / Notes (Optional)</label>
+                    <textarea id="asg-desc" rows="3" placeholder="Add instructions or homework details..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeAssignmentModal()" class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-md">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Application Script Logic -->
     <script>
         // State Management
-       let appData = JSON.parse(localStorage.getItem('attendly_data')) || {
+        let appData = JSON.parse(localStorage.getItem('attendly_data')) || {
             subjects: [
                 { id: 'sub_spc', name: 'Structural Programming using C', code: 'ES-BT101', color: '#10b981', target: 80 },
                 { id: 'sub_amr', name: 'Applied Mechanics and Robotics', code: 'ES-BT102', color: '#f59e0b', target: 80 },
@@ -387,39 +448,33 @@
                 { id: 'sub_iil', name: 'Ideation and Innovation Lab', code: 'ES-BT103', color: '#8b5cf6', target: 80 }
             ],
             timetable: [
-                // Monday
                 { id: 'tt_m1', subjectId: 'sub_spc', day: 1, time: '14:00' },
                 { id: 'tt_m2', subjectId: 'sub_amr', day: 1, time: '16:00' },
-                
-                // Tuesday
                 { id: 'tt_t1', subjectId: 'sub_iks', day: 2, time: '08:00' },
                 { id: 'tt_t2', subjectId: 'sub_em', day: 2, time: '10:00' },
                 { id: 'tt_t3', subjectId: 'sub_spc', day: 2, time: '12:00' },
-                
-                // Wednesday
                 { id: 'tt_w1', subjectId: 'sub_qp', day: 3, time: '08:00' },
                 { id: 'tt_w2', subjectId: 'sub_qp', day: 3, time: '11:00' },
                 { id: 'tt_w3', subjectId: 'sub_amr', day: 3, time: '12:00' },
                 { id: 'tt_w4', subjectId: 'sub_eclt', day: 3, time: '13:00' },
                 { id: 'tt_w5', subjectId: 'sub_em', day: 3, time: '14:00' },
-                
-                // Thursday
                 { id: 'tt_h1', subjectId: 'sub_eclt', day: 4, time: '10:00' },
                 { id: 'tt_h2', subjectId: 'sub_em', day: 4, time: '13:00' },
                 { id: 'tt_h3', subjectId: 'sub_amr', day: 4, time: '14:00' },
                 { id: 'tt_h4', subjectId: 'sub_hw', day: 4, time: '16:00' },
-                
-                // Friday
                 { id: 'tt_f1', subjectId: 'sub_iil', day: 5, time: '08:00' },
                 { id: 'tt_f2', subjectId: 'sub_em', day: 5, time: '10:00' },
                 { id: 'tt_f3', subjectId: 'sub_qp', day: 5, time: '11:00' }
             ],
             attendance: {},
+            assignments: [], // format: { id, subjectId, title, dueDate, description, status: 'pending'|'completed' }
             settings: { defaultTarget: 80 }
         };
+
         let currentActiveTab = 'dashboard';
         let selectedAttendanceDate = new Date().toISOString().split('T')[0];
         let calendarDate = new Date();
+        let currentAssignmentFilter = 'all';
 
         function saveData() {
             localStorage.setItem('attendly_data', JSON.stringify(appData));
@@ -453,6 +508,7 @@
             // Specific Tab Renders
             if(tabId === 'dashboard') renderDashboard();
             if(tabId === 'subjects') renderSubjects();
+            if(tabId === 'assignments') renderAssignments(currentAssignmentFilter);
             if(tabId === 'attendance') {
                 document.getElementById('attendance-date-picker').value = selectedAttendanceDate;
                 loadAttendanceForDate();
@@ -507,7 +563,6 @@
                 const s = subjectStats[subId];
                 s.percentage = s.conducted > 0 ? (s.attended / s.conducted) * 100 : 0;
                 
-                // Safe absences formula
                 const targetDec = s.target / 100;
                 if(s.conducted === 0) {
                     s.safeAbsences = '-';
@@ -529,7 +584,6 @@
         function renderDashboard() {
             const stats = calculateStats();
             
-            // Date & Greeting
             const now = new Date();
             const hours = now.getHours();
             let greeting = 'Good morning! ☀️';
@@ -538,7 +592,6 @@
             document.getElementById('greeting-title').innerText = greeting;
             document.getElementById('current-date-display').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-            // Summary stats
             document.getElementById('stat-overall-pct').innerText = stats.overallPercentage.toFixed(1) + '%';
             document.getElementById('stat-attended').innerText = stats.totalAttended;
             document.getElementById('stat-missed').innerText = stats.totalMissed;
@@ -556,7 +609,6 @@
                 badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20';
             }
 
-            // Insights Section
             const insightsContainer = document.getElementById('insights-content');
             if(stats.totalConducted === 0) {
                 insightsContainer.innerHTML = `
@@ -595,7 +647,6 @@
                 `;
             }
 
-            // Subject Cards Grid
             const grid = document.getElementById('dashboard-subjects-grid');
             if(appData.subjects.length === 0) {
                 grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-sm">No subjects added yet. Add one in the Subjects tab.</div>`;
@@ -645,6 +696,130 @@
             refreshIcons();
         }
 
+        // Assignments Logic
+        function renderAssignments(filter = 'all') {
+            currentAssignmentFilter = filter;
+            
+            // Highlight active filter button
+            ['all', 'pending', 'completed'].forEach(f => {
+                const btn = document.getElementById(`filter-btn-${f}`);
+                if(btn) {
+                    if(f === filter) {
+                        btn.className = 'px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition-all';
+                    } else {
+                        btn.className = 'px-3 py-1.5 text-xs font-semibold bg-slate-800 text-slate-400 rounded-lg hover:text-white transition-all';
+                    }
+                }
+            });
+
+            const grid = document.getElementById('assignments-grid');
+            let tasks = appData.assignments || [];
+
+            if(filter === 'pending') {
+                tasks = tasks.filter(t => t.status === 'pending');
+            } else if(filter === 'completed') {
+                tasks = tasks.filter(t => t.status === 'completed');
+            }
+
+            if(tasks.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No assignments found here. Click 'Add Assignment' to create one!</div>`;
+                return;
+            }
+
+            grid.innerHTML = '';
+            tasks.forEach(task => {
+                const sub = appData.subjects.find(s => s.id === task.subjectId) || { name: 'General', color: '#6366f1', code: 'GEN' };
+                const isCompleted = task.status === 'completed';
+                
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border ${isCompleted ? 'border-slate-800/50 opacity-75' : 'border-slate-800'} rounded-2xl p-5 space-y-3 flex flex-col justify-between transition-all">
+                        <div class="space-y-2">
+                            <div class="flex items-start justify-between">
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-md text-white inline-block" style="background-color: ${sub.color}">${sub.name}</span>
+                                <button onclick="deleteAssignment('${task.id}')" class="text-slate-500 hover:text-rose-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                            <h4 class="font-bold text-white text-base ${isCompleted ? 'line-through text-slate-400' : ''}">${task.title}</h4>
+                            ${task.description ? `<p class="text-xs text-slate-400 line-clamp-2">${task.description}</p>` : ''}
+                        </div>
+                        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                            <span class="text-slate-400 flex items-center gap-1.5">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Due: ${task.dueDate}
+                            </span>
+                            <button onclick="toggleAssignmentStatus('${task.id}')" class="px-3 py-1.5 rounded-xl font-semibold transition-all ${isCompleted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+                                ${isCompleted ? '✓ Completed' : 'Mark Done'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            refreshIcons();
+        }
+
+        function filterAssignments(filter) {
+            renderAssignments(filter);
+        }
+
+        function openAssignmentModal() {
+            const select = document.getElementById('asg-subject-id');
+            select.innerHTML = '';
+            if(appData.subjects.length === 0) {
+                alert('Please add a subject first before creating assignments.');
+                switchTab('subjects');
+                return;
+            }
+            appData.subjects.forEach(sub => {
+                select.innerHTML += `<option value="${sub.id}">${sub.name} (${sub.code || 'Sub'})</option>`;
+            });
+            document.getElementById('asg-title').value = '';
+            document.getElementById('asg-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('asg-desc').value = '';
+            document.getElementById('assignment-modal').classList.remove('hidden');
+        }
+
+        function closeAssignmentModal() {
+            document.getElementById('assignment-modal').classList.add('hidden');
+        }
+
+        function handleAssignmentSubmit(e) {
+            e.preventDefault();
+            const subjectId = document.getElementById('asg-subject-id').value;
+            const title = document.getElementById('asg-title').value;
+            const dueDate = document.getElementById('asg-date').value;
+            const description = document.getElementById('asg-desc').value;
+
+            if(!appData.assignments) appData.assignments = [];
+
+            appData.assignments.push({
+                id: 'asg_' + Date.now(),
+                subjectId,
+                title,
+                dueDate,
+                description,
+                status: 'pending'
+            });
+
+            saveData();
+            closeAssignmentModal();
+            renderAssignments(currentAssignmentFilter);
+        }
+
+        function toggleAssignmentStatus(id) {
+            const task = appData.assignments.find(t => t.id === id);
+            if(task) {
+                task.status = task.status === 'pending' ? 'completed' : 'pending';
+                saveData();
+                renderAssignments(currentAssignmentFilter);
+            }
+        }
+
+        function deleteAssignment(id) {
+            if(confirm('Delete this assignment?')) {
+                appData.assignments = appData.assignments.filter(t => t.id !== id);
+                saveData();
+                renderAssignments(currentAssignmentFilter);
+            }
+        }
+
         // Attendance Marking Tab
         function changeAttendanceDate(days) {
             const d = new Date(selectedAttendanceDate);
@@ -664,30 +839,15 @@
             selectedAttendanceDate = document.getElementById('attendance-date-picker').value;
             const container = document.getElementById('attendance-classes-container');
             
-            const dateObj = new Date(selectedAttendanceDate);
-            const dayOfWeek = dateObj.getDay(); // 0 = Sun, 1 = Mon...
-
-            // Find scheduled classes for this day of week
-            const scheduledForDay = appData.timetable.filter(t => t.day === dayOfWeek);
-
             if(appData.subjects.length === 0) {
                 container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Please add subjects first before marking attendance.</div>`;
                 return;
             }
 
-            if(scheduledForDay.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-3">
-                        <p class="text-slate-400 text-sm">No classes scheduled in your timetable for this day.</p>
-                        <p class="text-xs text-slate-500">You can also record attendance for any subject manually below:</p>
-                    </div>
-                `;
-            }
-
             let html = '<div class="space-y-3">';
             appData.subjects.forEach(sub => {
                 const dateLog = appData.attendance[selectedAttendanceDate] || {};
-                const currentStatus = dateLog[sub.id] || 'none'; // 'present', 'absent', 'none'
+                const currentStatus = dateLog[sub.id] || 'none';
 
                 html += `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -827,9 +987,10 @@
         }
 
         function deleteSubject(id) {
-            if(confirm('Are you sure you want to delete this subject? Attendance history for this subject will be removed.')) {
+            if(confirm('Are you sure you want to delete this subject?')) {
                 appData.subjects = appData.subjects.filter(s => s.id !== id);
                 appData.timetable = appData.timetable.filter(t => t.subjectId !== id);
+                if(appData.assignments) appData.assignments = appData.assignments.filter(a => a.subjectId !== id);
                 saveData();
                 renderSubjects();
             }
@@ -842,7 +1003,7 @@
             const container = document.getElementById('timetable-days-container');
             container.innerHTML = '';
 
-            const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon to Sun
+            const dayOrder = [1, 2, 3, 4, 5, 6, 0];
             dayOrder.forEach(dayIdx => {
                 const dayClasses = appData.timetable.filter(t => t.day === dayIdx).sort((a,b) => a.time.localeCompare(b.time));
                 
@@ -921,14 +1082,12 @@
             document.getElementById('calendar-month-year').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
             const firstDayIndex = new Date(year, month, 1).getDay();
-            // Adjust so Monday is 0
             const adjustedFirstDay = (firstDayIndex + 6) % 7;
             const totalDays = new Date(year, month + 1, 0).getDate();
 
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
 
-            // Blank padding for previous month
             for(let i = 0; i < adjustedFirstDay; i++) {
                 grid.innerHTML += `<div class="h-20 bg-slate-950/20 rounded-xl border border-transparent opacity-20"></div>`;
             }
