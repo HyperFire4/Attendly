@@ -1,1 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendly — Modern Student Attendance Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Inter Font & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row selection:bg-indigo-500 selection:text-white">
 
+    <!-- Mobile Header -->
+    <header class="md:hidden flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-30">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">A</div>
+            <span class="font-bold text-lg tracking-tight">Attendly</span>
+        </div>
+        <button id="mobile-menu-btn" class="p-2 text-slate-400 hover:text-white">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </header>
+
+    <!-- Sidebar Navigation (Desktop & Mobile Overlay) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0">
+        <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-500/20">A</div>
+                <div>
+                    <h1 class="font-bold text-base tracking-tight leading-tight">Attendly</h1>
+                    <span class="text-xs text-slate-400">Attendance Tracker</span>
+                </div>
+            </div>
+            <button id="close-sidebar" class="md:hidden text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="dashboard">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button onclick="switchTab('attendance')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="attendance">
+                <i data-lucide="check-square" class="w-4 h-4"></i> Daily Attendance
+            </button>
+            <button onclick="switchTab('subjects')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="subjects">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Subjects
+            </button>
+            <button onclick="switchTab('timetable')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="timetable">
+                <i data-lucide="calendar-days" class="w-4 h-4"></i> Timetable
+            </button>
+            <button onclick="switchTab('calendar')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="calendar">
+                <i data-lucide="calendar" class="w-4 h-4"></i> Calendar View
+            </button>
+            <button onclick="switchTab('settings')" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50" data-target="settings">
+                <i data-lucide="settings" class="w-4 h-4"></i> Settings
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800/60">
+            <div class="bg-slate-800/40 rounded-xl p-3.5 border border-slate-800">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-medium text-slate-300">Default Target</span>
+                    <span id="sidebar-target-display" class="text-xs font-bold text-indigo-400">80%</span>
+                </div>
+                <div class="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div id="sidebar-target-bar" class="bg-indigo-500 h-full rounded-full" style="width: 80%"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 md:ml-64 p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="space-y-6 tab-content">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 id="greeting-title" class="text-2xl md:text-3xl font-bold tracking-tight text-white">Good morning! 👋</h2>
+                    <p id="current-date-display" class="text-sm text-slate-400 mt-1">Loading date...</p>
+                </div>
+                <button onclick="switchTab('attendance')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Mark Today's Attendance
+                </button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Overall Attendance</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="stat-overall-pct" class="text-3xl font-bold text-white">0%</span>
+                        <span id="stat-overall-badge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">No Data</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Classes Attended</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="stat-attended" class="text-3xl font-bold text-emerald-400">0</span>
+                        <span class="text-xs text-slate-500">sessions</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Classes Missed</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="stat-missed" class="text-3xl font-bold text-rose-400">0</span>
+                        <span class="text-xs text-slate-500">sessions</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Conducted</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="stat-total" class="text-3xl font-bold text-indigo-400">0</span>
+                        <span class="text-xs text-slate-500">classes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prominent Insights Banner -->
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-indigo-500/20 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-indigo-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Intelligent Attendance Insights
+                </h3>
+                <div id="insights-content" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <!-- Populated via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Subject-wise Overview -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white tracking-tight">Subject Breakdown</h3>
+                    <button onclick="switchTab('subjects')" class="text-xs font-medium text-indigo-400 hover:text-indigo-300">Manage Subjects →</button>
+                </div>
+                <div id="dashboard-subjects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Populated via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ATTENDANCE MARKING TAB -->
+        <section id="tab-attendance" class="space-y-6 tab-content hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Daily Attendance</h2>
+                    <p class="text-sm text-slate-400 mt-1">Mark attendance for your scheduled classes.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1.5">
+                    <button onclick="changeAttendanceDate(-1)" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <input type="date" id="attendance-date-picker" onchange="loadAttendanceForDate()" class="bg-transparent text-sm font-medium text-white px-2 focus:outline-none cursor-pointer">
+                    <button onclick="changeAttendanceDate(1)" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    <button onclick="setAttendanceToday()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30">Today</button>
+                </div>
+            </div>
+
+            <div id="attendance-classes-container" class="space-y-3">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- SUBJECTS TAB -->
+        <section id="tab-subjects" class="space-y-6 tab-content hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Subjects & Targets</h2>
+                    <p class="text-sm text-slate-400 mt-1">Add courses, assign colors, and configure attendance goals.</p>
+                </div>
+                <button onclick="openSubjectModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add New Subject
+                </button>
+            </div>
+
+            <div id="subjects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- TIMETABLE TAB -->
+        <section id="tab-timetable" class="space-y-6 tab-content hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Weekly Timetable</h2>
+                    <p class="text-sm text-slate-400 mt-1">Set up your weekly classes to populate daily attendance automatically.</p>
+                </div>
+                <button onclick="openTimetableModal()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Schedule Slot
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-7 gap-4" id="timetable-days-container">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- CALENDAR TAB -->
+        <section id="tab-calendar" class="space-y-6 tab-content hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Attendance Calendar</h2>
+                    <p class="text-sm text-slate-400 mt-1">Monthly breakdown of your presence and absences.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2">
+                    <button onclick="changeCalendarMonth(-1)" class="text-slate-400 hover:text-white"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <span id="calendar-month-year" class="font-semibold text-sm w-36 text-center">Month Year</span>
+                    <button onclick="changeCalendarMonth(1)" class="text-slate-400 hover:text-white"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+                <div class="grid grid-cols-7 gap-2 mb-4 text-center">
+                    <span class="text-xs font-bold text-slate-500">Mon</span>
+                    <span class="text-xs font-bold text-slate-500">Tue</span>
+                    <span class="text-xs font-bold text-slate-500">Wed</span>
+                    <span class="text-xs font-bold text-slate-500">Thu</span>
+                    <span class="text-xs font-bold text-slate-500">Fri</span>
+                    <span class="text-xs font-bold text-slate-500">Sat</span>
+                    <span class="text-xs font-bold text-slate-500">Sun</span>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SETTINGS TAB -->
+        <section id="tab-settings" class="space-y-6 tab-content hidden">
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight text-white">Settings</h2>
+                <p class="text-sm text-slate-400 mt-1">Manage global preferences and data.</p>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 max-w-2xl">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Default Attendance Target (%)</label>
+                    <input type="number" id="settings-default-target" min="50" max="100" value="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Export Attendance Data</h4>
+                        <p class="text-xs text-slate-400">Download your logs as a JSON/CSV file.</p>
+                    </div>
+                    <button onclick="exportData()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-all">Export JSON</button>
+                </div>
+
+                <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                    <div>
+                        <h4 class="text-sm font-semibold text-rose-400">Reset All Data</h4>
+                        <p class="text-xs text-slate-400">Delete all subjects, timetables, and attendance logs.</p>
+                    </div>
+                    <button onclick="resetAllData()" class="px-4 py-2 bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 text-xs font-semibold rounded-xl transition-all">Reset Data</button>
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="saveSettings()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all">Save Changes</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SUBJECT MODAL -->
+    <div id="subject-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 id="subject-modal-title" class="text-lg font-bold text-white">Add Subject</h3>
+                <button onclick="closeSubjectModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="subject-form" onsubmit="handleSubjectSubmit(event)" class="space-y-4">
+                <input type="hidden" id="edit-subject-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Subject Name</label>
+                    <input type="text" id="sub-name" required placeholder="e.g. Data Structures" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Subject Code</label>
+                        <input type="text" id="sub-code" placeholder="e.g. CS201" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target %</label>
+                        <input type="number" id="sub-target" min="50" max="100" value="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Color Accent</label>
+                    <div class="flex gap-2 pt-1" id="color-picker-container">
+                        <button type="button" onclick="selectColor('#6366f1')" class="w-8 h-8 rounded-full bg-indigo-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-indigo-500 color-opt" data-color="#6366f1"></button>
+                        <button type="button" onclick="selectColor('#ec4899')" class="w-8 h-8 rounded-full bg-pink-500 color-opt" data-color="#ec4899"></button>
+                        <button type="button" onclick="selectColor('#10b981')" class="w-8 h-8 rounded-full bg-emerald-500 color-opt" data-color="#10b981"></button>
+                        <button type="button" onclick="selectColor('#f59e0b')" class="w-8 h-8 rounded-full bg-amber-500 color-opt" data-color="#f59e0b"></button>
+                        <button type="button" onclick="selectColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 color-opt" data-color="#3b82f6"></button>
+                        <button type="button" onclick="selectColor('#8b5cf6')" class="w-8 h-8 rounded-full bg-violet-500 color-opt" data-color="#8b5cf6"></button>
+                    </div>
+                    <input type="hidden" id="sub-color" value="#6366f1">
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeSubjectModal()" class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-md">Save Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TIMETABLE MODAL -->
+    <div id="timetable-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Add Class to Timetable</h3>
+                <button onclick="closeTimetableModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="timetable-form" onsubmit="handleTimetableSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Select Subject</label>
+                    <select id="tt-subject-id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Day of Week</label>
+                    <select id="tt-day" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                        <option value="0">Sunday</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Start Time</label>
+                        <input type="time" id="tt-time" value="09:00" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeTimetableModal()" class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-md">Add Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // State Management
+        let appData = JSON.parse(localStorage.getItem('attendly_data')) || {
+            subjects: [
+                { id: 'sub_1', name: 'Data Structures & Algos', code: 'CS201', color: '#6366f1', target: 80 },
+                { id: 'sub_2', name: 'Operating Systems', code: 'CS202', color: '#ec4899', target: 80 },
+                { id: 'sub_3', name: 'Database Management', code: 'CS203', color: '#10b981', target: 75 }
+            ],
+            timetable: [
+                { id: 'tt_1', subjectId: 'sub_1', day: 1, time: '09:00' },
+                { id: 'tt_2', subjectId: 'sub_2', day: 1, time: '10:30' },
+                { id: 'tt_3', subjectId: 'sub_3', day: 2, time: '09:00' }
+            ],
+            attendance: {}, // format: { "YYYY-MM-DD": { "subjectId": "present" | "absent" } }
+            settings: { defaultTarget: 80 }
+        };
+
+        let currentActiveTab = 'dashboard';
+        let selectedAttendanceDate = new Date().toISOString().split('T')[0];
+        let calendarDate = new Date();
+
+        function saveData() {
+            localStorage.setItem('attendly_data', JSON.stringify(appData));
+            initApp();
+        }
+
+        // Initialize Lucide Icons
+        function refreshIcons() {
+            lucide.createIcons();
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === tabId) {
+                    btn.classList.add('bg-indigo-600/10', 'text-indigo-400', 'font-semibold');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('bg-indigo-600/10', 'text-indigo-400', 'font-semibold');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            // Close mobile menu if open
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+
+            // Specific Tab Renders
+            if(tabId === 'dashboard') renderDashboard();
+            if(tabId === 'subjects') renderSubjects();
+            if(tabId === 'attendance') {
+                document.getElementById('attendance-date-picker').value = selectedAttendanceDate;
+                loadAttendanceForDate();
+            }
+            if(tabId === 'timetable') renderTimetable();
+            if(tabId === 'calendar') renderCalendar();
+            if(tabId === 'settings') {
+                document.getElementById('settings-default-target').value = appData.settings.defaultTarget;
+            }
+            refreshIcons();
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('-translate-x-full');
+        });
+        document.getElementById('close-sidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+        });
+
+        // Calculations helper
+        function calculateStats() {
+            let totalAttended = 0;
+            let totalMissed = 0;
+            let totalConducted = 0;
+
+            const subjectStats = {};
+            appData.subjects.forEach(sub => {
+                subjectStats[sub.id] = { attended: 0, missed: 0, conducted: 0, name: sub.name, code: sub.code, color: sub.color, target: sub.target };
+            });
+
+            Object.keys(appData.attendance).forEach(date => {
+                const dayLog = appData.attendance[date];
+                Object.keys(dayLog).forEach(subId => {
+                    if(!subjectStats[subId]) return;
+                    const status = dayLog[subId];
+                    if(status === 'present') {
+                        subjectStats[subId].attended++;
+                        subjectStats[subId].conducted++;
+                        totalAttended++;
+                        totalConducted++;
+                    } else if(status === 'absent') {
+                        subjectStats[subId].missed++;
+                        subjectStats[subId].conducted++;
+                        totalMissed++;
+                        totalConducted++;
+                    }
+                });
+            });
+
+            Object.keys(subjectStats).forEach(subId => {
+                const s = subjectStats[subId];
+                s.percentage = s.conducted > 0 ? (s.attended / s.conducted) * 100 : 0;
+                
+                // Safe absences formula
+                const targetDec = s.target / 100;
+                if(s.conducted === 0) {
+                    s.safeAbsences = '-';
+                    s.recoverNeeded = 0;
+                } else if(s.percentage >= s.target) {
+                    s.safeAbsences = Math.max(0, Math.floor((s.attended / targetDec) - s.conducted));
+                    s.recoverNeeded = 0;
+                } else {
+                    s.safeAbsences = 0;
+                    s.recoverNeeded = Math.ceil((targetDec * s.conducted - s.attended) / (1 - targetDec));
+                }
+            });
+
+            const overallPercentage = totalConducted > 0 ? (totalAttended / totalConducted) * 100 : 0;
+            return { totalAttended, totalMissed, totalConducted, overallPercentage, subjectStats };
+        }
+
+        // Render Dashboard
+        function renderDashboard() {
+            const stats = calculateStats();
+            
+            // Date & Greeting
+            const now = new Date();
+            const hours = now.getHours();
+            let greeting = 'Good morning! ☀️';
+            if(hours >= 12 && hours < 17) greeting = 'Good afternoon! 🌤️';
+            else if(hours >= 17) greeting = 'Good evening! 🌙';
+            document.getElementById('greeting-title').innerText = greeting;
+            document.getElementById('current-date-display').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Summary stats
+            document.getElementById('stat-overall-pct').innerText = stats.overallPercentage.toFixed(1) + '%';
+            document.getElementById('stat-attended').innerText = stats.totalAttended;
+            document.getElementById('stat-missed').innerText = stats.totalMissed;
+            document.getElementById('stat-total').innerText = stats.totalConducted;
+
+            const badge = document.getElementById('stat-overall-badge');
+            if(stats.totalConducted === 0) {
+                badge.innerText = 'No Data';
+                badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400';
+            } else if(stats.overallPercentage >= appData.settings.defaultTarget) {
+                badge.innerText = 'On Track';
+                badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            } else {
+                badge.innerText = 'Below Target';
+                badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20';
+            }
+
+            // Insights Section
+            const insightsContainer = document.getElementById('insights-content');
+            if(stats.totalConducted === 0) {
+                insightsContainer.innerHTML = `
+                    <div class="md:col-span-3 text-sm text-slate-400">
+                        Mark attendance for your classes to unlock personalized insights and intelligent attendance buffers!
+                    </div>
+                `;
+            } else {
+                const target = appData.settings.defaultTarget;
+                const totalTargetDec = target / 100;
+                const safeOverall = Math.max(0, Math.floor((stats.totalAttended / totalTargetDec) - stats.totalConducted));
+                const recoverOverall = stats.overallPercentage >= target ? 0 : Math.ceil((totalTargetDec * stats.totalConducted - stats.totalAttended) / (1 - totalTargetDec));
+
+                insightsContainer.innerHTML = `
+                    <div class="flex items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-bold text-lg">${stats.overallPercentage.toFixed(0)}%</div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Overall Target</span>
+                            <span class="text-base font-bold text-white">${target}% Minimum</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-bold text-lg">${safeOverall}</div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Safe Absences</span>
+                            <span class="text-xs text-slate-300 font-medium">${safeOverall === 0 ? 'No classes can be missed safely' : 'Classes you can skip safely'}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="w-12 h-12 rounded-xl bg-amber-600/20 flex items-center justify-center text-amber-400 font-bold text-lg">${recoverOverall}</div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Classes to Recover</span>
+                            <span class="text-xs text-slate-300 font-medium">${recoverOverall === 0 ? 'Currently meeting attendance goal!' : 'Consecutive classes needed'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Subject Cards Grid
+            const grid = document.getElementById('dashboard-subjects-grid');
+            if(appData.subjects.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-sm">No subjects added yet. Add one in the Subjects tab.</div>`;
+                return;
+            }
+
+            grid.innerHTML = '';
+            appData.subjects.forEach(sub => {
+                const s = stats.subjectStats[sub.id];
+                const statusColor = s.conducted === 0 ? 'bg-slate-700' : s.percentage >= sub.target ? 'bg-emerald-500' : 'bg-rose-500';
+                const statusText = s.conducted === 0 ? 'No classes recorded' : s.percentage >= sub.target ? 'Safe' : 'Action Required';
+                const statusBadgeClass = s.conducted === 0 ? 'bg-slate-800 text-slate-400' : s.percentage >= sub.target ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400';
+
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition-all">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-md text-white mb-1 inline-block" style="background-color: ${sub.color}">${sub.code || 'SUB'}</span>
+                                <h4 class="font-bold text-white text-base">${sub.name}</h4>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${statusBadgeClass}">${statusText}</span>
+                        </div>
+                        <div class="flex items-baseline justify-between">
+                            <span class="text-3xl font-bold text-white">${s.percentage.toFixed(1)}%</span>
+                            <span class="text-xs text-slate-400">Target: ${sub.target}%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: ${s.percentage}%; background-color: ${sub.color}"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-center">
+                            <div>
+                                <span class="text-[10px] uppercase text-slate-500 block">Attended</span>
+                                <span class="text-sm font-bold text-emerald-400">${s.attended}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase text-slate-500 block">Missed</span>
+                                <span class="text-sm font-bold text-rose-400">${s.missed}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] uppercase text-slate-500 block">Safe Miss</span>
+                                <span class="text-sm font-bold text-indigo-400">${s.safeAbsences}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            refreshIcons();
+        }
+
+        // Attendance Marking Tab
+        function changeAttendanceDate(days) {
+            const d = new Date(selectedAttendanceDate);
+            d.setDate(d.getDate() + days);
+            selectedAttendanceDate = d.toISOString().split('T')[0];
+            document.getElementById('attendance-date-picker').value = selectedAttendanceDate;
+            loadAttendanceForDate();
+        }
+
+        function setAttendanceToday() {
+            selectedAttendanceDate = new Date().toISOString().split('T')[0];
+            document.getElementById('attendance-date-picker').value = selectedAttendanceDate;
+            loadAttendanceForDate();
+        }
+
+        function loadAttendanceForDate() {
+            selectedAttendanceDate = document.getElementById('attendance-date-picker').value;
+            const container = document.getElementById('attendance-classes-container');
+            
+            const dateObj = new Date(selectedAttendanceDate);
+            const dayOfWeek = dateObj.getDay(); // 0 = Sun, 1 = Mon...
+
+            // Find scheduled classes for this day of week
+            const scheduledForDay = appData.timetable.filter(t => t.day === dayOfWeek);
+
+            if(appData.subjects.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Please add subjects first before marking attendance.</div>`;
+                return;
+            }
+
+            if(scheduledForDay.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-3">
+                        <p class="text-slate-400 text-sm">No classes scheduled in your timetable for this day.</p>
+                        <p class="text-xs text-slate-500">You can also record attendance for any subject manually below:</p>
+                    </div>
+                `;
+            }
+
+            let html = '<div class="space-y-3">';
+            appData.subjects.forEach(sub => {
+                const dateLog = appData.attendance[selectedAttendanceDate] || {};
+                const currentStatus = dateLog[sub.id] || 'none'; // 'present', 'absent', 'none'
+
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-10 rounded-full" style="background-color: ${sub.color}"></div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${sub.name}</h4>
+                                <span class="text-xs text-slate-400">${sub.code || 'General'}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="markAttendance('${selectedAttendanceDate}', '${sub.id}', 'present')" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all ${currentStatus === 'present' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Present</button>
+                            <button onclick="markAttendance('${selectedAttendanceDate}', '${sub.id}', 'absent')" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all ${currentStatus === 'absent' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Absent</button>
+                            <button onclick="markAttendance('${selectedAttendanceDate}', '${sub.id}', 'none')" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${currentStatus === 'none' ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-500 hover:bg-slate-800'}">Clear</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function markAttendance(date, subId, status) {
+            if(!appData.attendance[date]) {
+                appData.attendance[date] = {};
+            }
+            if(status === 'none') {
+                delete appData.attendance[date][subId];
+                if(Object.keys(appData.attendance[date]).length === 0) {
+                    delete appData.attendance[date];
+                }
+            } else {
+                appData.attendance[date][subId] = status;
+            }
+            saveData();
+            loadAttendanceForDate();
+        }
+
+        // Subjects Management
+        function renderSubjects() {
+            const grid = document.getElementById('subjects-grid');
+            if(appData.subjects.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No subjects created yet.</div>`;
+                return;
+            }
+
+            const stats = calculateStats();
+            grid.innerHTML = '';
+            appData.subjects.forEach(sub => {
+                const s = stats.subjectStats[sub.id];
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-4 h-4 rounded-full" style="background-color: ${sub.color}"></div>
+                                <div>
+                                    <h4 class="font-bold text-white text-base">${sub.name}</h4>
+                                    <span class="text-xs text-slate-400">${sub.code || 'No code'} • Target: ${sub.target}%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="editSubject('${sub.id}')" class="p-2 text-slate-400 hover:text-white"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                <button onclick="deleteSubject('${sub.id}')" class="p-2 text-rose-400 hover:text-rose-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-2 border-t border-slate-800/80">
+                            <span class="text-2xl font-bold text-white">${s.percentage.toFixed(1)}%</span>
+                            <span class="text-xs text-slate-400">${s.attended} attended / ${s.conducted} total</span>
+                        </div>
+                    </div>
+                `;
+            });
+            refreshIcons();
+        }
+
+        function openSubjectModal(subId = null) {
+            document.getElementById('subject-modal').classList.remove('hidden');
+            if(subId) {
+                const sub = appData.subjects.find(s => s.id === subId);
+                document.getElementById('subject-modal-title').innerText = 'Edit Subject';
+                document.getElementById('edit-subject-id').value = sub.id;
+                document.getElementById('sub-name').value = sub.name;
+                document.getElementById('sub-code').value = sub.code || '';
+                document.getElementById('sub-target').value = sub.target;
+                selectColor(sub.color);
+            } else {
+                document.getElementById('subject-modal-title').innerText = 'Add Subject';
+                document.getElementById('edit-subject-id').value = '';
+                document.getElementById('sub-name').value = '';
+                document.getElementById('sub-code').value = '';
+                document.getElementById('sub-target').value = appData.settings.defaultTarget;
+                selectColor('#6366f1');
+            }
+        }
+
+        function closeSubjectModal() {
+            document.getElementById('subject-modal').classList.add('hidden');
+        }
+
+        function selectColor(colorHex) {
+            document.getElementById('sub-color').value = colorHex;
+            document.querySelectorAll('.color-opt').forEach(btn => {
+                if(btn.dataset.color === colorHex) {
+                    btn.classList.add('ring-2', 'ring-offset-2', 'ring-offset-slate-900', 'ring-indigo-500');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-offset-2', 'ring-offset-slate-900', 'ring-indigo-500');
+                }
+            });
+        }
+
+        function handleSubjectSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-subject-id').value;
+            const name = document.getElementById('sub-name').value;
+            const code = document.getElementById('sub-code').value;
+            const target = parseInt(document.getElementById('sub-target').value);
+            const color = document.getElementById('sub-color').value;
+
+            if(id) {
+                const sub = appData.subjects.find(s => s.id === id);
+                sub.name = name;
+                sub.code = code;
+                sub.target = target;
+                sub.color = color;
+            } else {
+                const newSub = { id: 'sub_' + Date.now(), name, code, target, color };
+                appData.subjects.push(newSub);
+            }
+
+            saveData();
+            closeSubjectModal();
+            renderSubjects();
+        }
+
+        function editSubject(id) {
+            openSubjectModal(id);
+        }
+
+        function deleteSubject(id) {
+            if(confirm('Are you sure you want to delete this subject? Attendance history for this subject will be removed.')) {
+                appData.subjects = appData.subjects.filter(s => s.id !== id);
+                appData.timetable = appData.timetable.filter(t => t.subjectId !== id);
+                saveData();
+                renderSubjects();
+            }
+        }
+
+        // Timetable Management
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        function renderTimetable() {
+            const container = document.getElementById('timetable-days-container');
+            container.innerHTML = '';
+
+            const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon to Sun
+            dayOrder.forEach(dayIdx => {
+                const dayClasses = appData.timetable.filter(t => t.day === dayIdx).sort((a,b) => a.time.localeCompare(b.time));
+                
+                let classesHtml = '';
+                if(dayClasses.length === 0) {
+                    classesHtml = `<p class="text-xs text-slate-500 italic py-2">No classes scheduled</p>`;
+                } else {
+                    dayClasses.forEach(c => {
+                        const sub = appData.subjects.find(s => s.id === c.subjectId);
+                        if(!sub) return;
+                        classesHtml += `
+                            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between text-xs">
+                                <div>
+                                    <span class="font-bold text-white block">${sub.name}</span>
+                                    <span class="text-slate-400">${c.time}</span>
+                                </div>
+                                <button onclick="deleteTimetableSlot('${c.id}')" class="text-slate-500 hover:text-rose-400"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        `;
+                    });
+                }
+
+                container.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                        <h4 class="font-bold text-sm text-white pb-2 border-b border-slate-800">${dayNames[dayIdx]}</h4>
+                        <div class="space-y-2">
+                            ${classesHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            refreshIcons();
+        }
+
+        function openTimetableModal() {
+            const select = document.getElementById('tt-subject-id');
+            select.innerHTML = '';
+            appData.subjects.forEach(sub => {
+                select.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+            });
+            document.getElementById('timetable-modal').classList.remove('hidden');
+        }
+
+        function closeTimetableModal() {
+            document.getElementById('timetable-modal').classList.add('hidden');
+        }
+
+        function handleTimetableSubmit(e) {
+            e.preventDefault();
+            const subjectId = document.getElementById('tt-subject-id').value;
+            const day = parseInt(document.getElementById('tt-day').value);
+            const time = document.getElementById('tt-time').value;
+
+            appData.timetable.push({ id: 'tt_' + Date.now(), subjectId, day, time });
+            saveData();
+            closeTimetableModal();
+            renderTimetable();
+        }
+
+        function deleteTimetableSlot(id) {
+            appData.timetable = appData.timetable.filter(t => t.id !== id);
+            saveData();
+            renderTimetable();
+        }
+
+        // Calendar Tab
+        function changeCalendarMonth(delta) {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            document.getElementById('calendar-month-year').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            // Adjust so Monday is 0
+            const adjustedFirstDay = (firstDayIndex + 6) % 7;
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            // Blank padding for previous month
+            for(let i = 0; i < adjustedFirstDay; i++) {
+                grid.innerHTML += `<div class="h-20 bg-slate-950/20 rounded-xl border border-transparent opacity-20"></div>`;
+            }
+
+            for(let day = 1; day <= totalDays; day++) {
+                const monthStr = String(month + 1).padStart(2, '0');
+                const dayStr = String(day).padStart(2, '0');
+                const dateKey = `${year}-${monthStr}-${dayStr}`;
+
+                const dayLogs = appData.attendance[dateKey] || {};
+                const values = Object.values(dayLogs);
+                
+                let indicatorClass = 'bg-slate-900 border-slate-800';
+                let indicatorDot = '';
+
+                if(values.length > 0) {
+                    const hasPresent = values.includes('present');
+                    const hasAbsent = values.includes('absent');
+                    if(hasPresent && !hasAbsent) {
+                        indicatorClass = 'bg-emerald-950/20 border-emerald-500/30';
+                        indicatorDot = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>';
+                    } else if(hasAbsent && !hasPresent) {
+                        indicatorClass = 'bg-rose-950/20 border-rose-500/30';
+                        indicatorDot = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>';
+                    } else {
+                        indicatorClass = 'bg-amber-950/20 border-amber-500/30';
+                        indicatorDot = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>';
+                    }
+                }
+
+                grid.innerHTML += `
+                    <div onclick="jumpToAttendanceDate('${dateKey}')" class="h-20 ${indicatorClass} border rounded-xl p-2 flex flex-col justify-between cursor-pointer hover:border-indigo-500/50 transition-all">
+                        <span class="text-xs font-semibold text-slate-300">${day}</span>
+                        <div class="flex items-center justify-center">${indicatorDot}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function jumpToAttendanceDate(dateKey) {
+            selectedAttendanceDate = dateKey;
+            switchTab('attendance');
+        }
+
+        // Settings Actions
+        function saveSettings() {
+            const target = parseInt(document.getElementById('settings-default-target').value);
+            appData.settings.defaultTarget = target;
+            document.getElementById('sidebar-target-display').innerText = target + '%';
+            document.getElementById('sidebar-target-bar').style.width = target + '%';
+            saveData();
+            alert('Settings saved successfully!');
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "attendly_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function resetAllData() {
+            if(confirm('Are you absolutely sure you want to clear all data? This cannot be undone.')) {
+                localStorage.removeItem('attendly_data');
+                location.reload();
+            }
+        }
+
+        // Init App on Load
+        function initApp() {
+            const target = appData.settings?.defaultTarget || 80;
+            document.getElementById('sidebar-target-display').innerText = target + '%';
+            document.getElementById('sidebar-target-bar').style.width = target + '%';
+        }
+
+        initApp();
+        switchTab('dashboard');
+    </script>
+</body>
+</html>
