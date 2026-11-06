@@ -375,21 +375,48 @@
     <!-- Application Script Logic -->
     <script>
         // State Management
-        let appData = JSON.parse(localStorage.getItem('attendly_data')) || {
+       let appData = JSON.parse(localStorage.getItem('attendly_data')) || {
             subjects: [
-                { id: 'sub_1', name: 'Data Structures & Algos', code: 'CS201', color: '#6366f1', target: 80 },
-                { id: 'sub_2', name: 'Operating Systems', code: 'CS202', color: '#ec4899', target: 80 },
-                { id: 'sub_3', name: 'Database Management', code: 'CS203', color: '#10b981', target: 75 }
+                { id: 'sub_spc', name: 'Structural Programming using C', code: 'ES-BT101', color: '#10b981', target: 80 },
+                { id: 'sub_amr', name: 'Applied Mechanics and Robotics', code: 'ES-BT102', color: '#f59e0b', target: 80 },
+                { id: 'sub_iks', name: 'Indian Knowledge System', code: 'HS-BT102', color: '#14b8a6', target: 80 },
+                { id: 'sub_em', name: 'Engineering Mathematics-I', code: 'BS-BT101', color: '#6366f1', target: 80 },
+                { id: 'sub_qp', name: 'Quantum Physics', code: 'BS-BT102', color: '#3b82f6', target: 80 },
+                { id: 'sub_eclt', name: 'Engg. Communication & Lean Thinking', code: 'HS-BT101', color: '#ec4899', target: 80 },
+                { id: 'sub_hw', name: 'Health and Wellness', code: 'MC-BT101', color: '#f43f5e', target: 80 },
+                { id: 'sub_iil', name: 'Ideation and Innovation Lab', code: 'ES-BT103', color: '#8b5cf6', target: 80 }
             ],
             timetable: [
-                { id: 'tt_1', subjectId: 'sub_1', day: 1, time: '09:00' },
-                { id: 'tt_2', subjectId: 'sub_2', day: 1, time: '10:30' },
-                { id: 'tt_3', subjectId: 'sub_3', day: 2, time: '09:00' }
+                // Monday
+                { id: 'tt_m1', subjectId: 'sub_spc', day: 1, time: '14:00' },
+                { id: 'tt_m2', subjectId: 'sub_amr', day: 1, time: '16:00' },
+                
+                // Tuesday
+                { id: 'tt_t1', subjectId: 'sub_iks', day: 2, time: '08:00' },
+                { id: 'tt_t2', subjectId: 'sub_em', day: 2, time: '10:00' },
+                { id: 'tt_t3', subjectId: 'sub_spc', day: 2, time: '12:00' },
+                
+                // Wednesday
+                { id: 'tt_w1', subjectId: 'sub_qp', day: 3, time: '08:00' },
+                { id: 'tt_w2', subjectId: 'sub_qp', day: 3, time: '11:00' },
+                { id: 'tt_w3', subjectId: 'sub_amr', day: 3, time: '12:00' },
+                { id: 'tt_w4', subjectId: 'sub_eclt', day: 3, time: '13:00' },
+                { id: 'tt_w5', subjectId: 'sub_em', day: 3, time: '14:00' },
+                
+                // Thursday
+                { id: 'tt_h1', subjectId: 'sub_eclt', day: 4, time: '10:00' },
+                { id: 'tt_h2', subjectId: 'sub_em', day: 4, time: '13:00' },
+                { id: 'tt_h3', subjectId: 'sub_amr', day: 4, time: '14:00' },
+                { id: 'tt_h4', subjectId: 'sub_hw', day: 4, time: '16:00' },
+                
+                // Friday
+                { id: 'tt_f1', subjectId: 'sub_iil', day: 5, time: '08:00' },
+                { id: 'tt_f2', subjectId: 'sub_em', day: 5, time: '10:00' },
+                { id: 'tt_f3', subjectId: 'sub_qp', day: 5, time: '11:00' }
             ],
-            attendance: {}, // format: { "YYYY-MM-DD": { "subjectId": "present" | "absent" } }
+            attendance: {},
             settings: { defaultTarget: 80 }
         };
-
         let currentActiveTab = 'dashboard';
         let selectedAttendanceDate = new Date().toISOString().split('T')[0];
         let calendarDate = new Date();
